@@ -1,5 +1,5 @@
 = Production vs. Backup Storage: Classification Criteria
-:revdate: 2026-09-04
+:revdate: 2026-09-22
 :page-revdate: {revdate}
 
 In a {harvester-product-name} and {longhorn-product-name} environment, storage is strictly categorized into *Production Storage* and *Backup Storage*. Misclassifying or misconfiguring these storage tiers can lead to degraded virtual machine (VM) performance, live migration failures, or data loss during disaster recovery scenarios.
@@ -21,9 +21,6 @@ The hardware, provisioning, and resiliency criteria detailed below apply *strict
 === Built-in Storage: Hardware and Engine Criteria
 
 * *V1 Data Engine*: The standard storage engine used for VM root volumes, images, and standard workloads.
-* *xref:storage/longhorn-v2-data-engine.adoc[V2 Data Engine (High Performance)]*: An *experimental* SPDK-based engine designed for high IOPS and throughput. Because it is experimental, it must be evaluated carefully and is not recommended for strict production workloads.
-** *Resource Requirements*: Requires strictly dedicated resources per node (1 CPU core for the `instance-manager` pod and 2 GiB RAM allocated as `1024 x 2` MiB huge pages).
-** *Media Requirements*: Local NVMe disks (using the SPDK NVMe bdev driver) are *recommended for full functionality*, such as file system trim/unmap support. While non-NVMe raw disks are supported via the SPDK AIO driver, they lack unmap support and can result in I/O errors or paused VMs if trimmed.
 * *Tiered / Cold Storage*: Hard Disk Drives (HDDs) can be added to the cluster for cold storage or archiving (see xref:storage/storageclass.adoc#_hdd_scenario[HDD Scenario]), but are explicitly *not recommended* for guest Kubernetes (RKE2) clusters or VMs requiring good disk performance.
 
 === Built-in Storage: Provisioning and Isolation Criteria
@@ -37,6 +34,12 @@ The hardware, provisioning, and resiliency criteria detailed below apply *strict
 * *Synchronous Replication*: Relies on real-time, synchronous replication across cluster nodes (default `numberOfReplicas: "3"`).
 * *Live Migration*: Requires the `migratable` parameter in the StorageClass to be set to true (and requires a replica count greater than 1) for xref:virtual-machines/live-migration.adoc[Live Migration] to function.
 * *Snapshots*: VM Snapshots reside directly on Production Storage and consume cluster disk space. Snapshot space limits can be enforced via Namespace or VM-level quotas. For more information, see xref:virtual-machines/backup-restore.adoc#_virtual_machine_snapshot_space_management[Virtual Machine Snapshot Space Management].
+
+== Experimental Storage (Non-Production)
+
+* *xref:storage/longhorn-v2-data-engine.adoc[V2 Data Engine (High Performance)]*: An *experimental* SPDK-based engine designed for high IOPS and throughput. As explicitly stated in the documentation, it *must not be utilized in a production environment*.
+** *Resource Requirements*: Requires strictly dedicated resources per node (1 CPU core for the `instance-manager` pod and 2 GiB RAM allocated as `1024 x 2` MiB huge pages).
+** *Media Requirements*: Local NVMe disks (using the SPDK NVMe bdev driver) are *recommended for full functionality*, such as file system trim/unmap support. While non-NVMe raw disks are supported via the SPDK AIO driver, they lack unmap support and can result in I/O errors or paused VMs if trimmed.
 
 == Backup Storage (Secondary / Off-Cluster)
 
@@ -63,7 +66,7 @@ While the underlying {longhorn-product-name} engine natively supports Azure Blob
 == Summary Matrix
 
 |===
-| Criteria | Production Storage | Backup Storage
+| Criteria | Built-in Production Storage | Backup Storage
 
 | *Primary Function*
 | Active block storage for live VMs and workloads.
