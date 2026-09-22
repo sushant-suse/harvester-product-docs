@@ -1,5 +1,5 @@
 = {longhorn-product-name} Reference Architecture
-:revdate: 2026-07-22
+:revdate: 2026-09-22
 :page-revdate: {revdate}
 
 {harvester-product-name} supports distributed block storage and tiering using {longhorn-product-name} as its built-in storage system. Each {longhorn-product-name} volume is managed by a dedicated storage controller and is synchronously replicated across nodes in the cluster.
@@ -26,13 +26,18 @@ In its default configuration, {longhorn-product-name} utilizes the V1 Data Engin
 
 === V2 Data Engine
 
+[IMPORTANT]
+====
+The Longhorn V2 Data Engine is currently an *Experimental* feature and should not be utilized in a production environment.
+====
+
 The V2 Data Engine utilizes the Storage Performance Development Kit (SPDK) to reduce I/O latency while boosting IOPS and throughput (see xref:storage/longhorn-v2-data-engine.adoc[{longhorn-product-name} V2 Data Engine]). It requires raw block disks, and local NVMe disks are strongly recommended for optimal performance.
 
 Deploying the V2 engine requires strict adherence to the following dedicated resources and configurations per node:
 
 * *CPU Allocation*: The `spdk_tgt` process relies on intensive busy-polling. By default, the `data-engine-cpu-mask` is set to `0x3` (which allocates 2 dedicated CPU cores) to separate I/O polling from management RPCs, preventing latency spikes and operational instability.
 * *Memory (HugePages)*: Nodes require 2 GiB of RAM allocated specifically as 1024 × 2 MiB-sized huge pages.
-* *Kernel & Modules*: Requires Linux kernel 6.7 or later for NVMe/TCP support, alongside the `vfio_pci`, `uio_pci_generic`, and `nvme-tcp` kernel modules.
+* *Kernel & Modules*: Requires Linux kernel 5.19 or later for NVMe/TCP support (version 6.7 or later is recommended for improved stability), alongside the `vfio_pci`, `uio_pci_generic`, and `nvme-tcp` kernel modules.
 * *Disk & IOMMU Isolation*: For SPDK to natively claim an NVMe disk, the device must be fully isolatable; VFIO must claim the entire IOMMU group.
 
 == Storage Networking
@@ -54,5 +59,5 @@ Administrators must account for the following limitations during xref:/upgrades/
 * *V2 Upgrades*: Live upgrades of V2 volumes are *not supported*. All virtual machines utilizing V2 volumes must be stopped, and volumes detached, before initiating a cluster upgrade; otherwise, the upgrade process will stall.
 * *V2 Backing Images*: The V2 Data Engine does not support backing image creation or usage.
 * *Encrypted Volumes*: Live migration of encrypted volumes requires the engine image to have a CLI API version of 12 or newer (v1.12+). The V2 Data Engine currently does not support volume encryption.
-* *UBLK Front-end Kernel Limitation*: The experimental UBLK front-end for V2 Data Engine volumes is incompatible with Linux kernels v6.17.0 and above.
+* *UBLK Front-end Kernel Limitation*: The experimental UBLK front-end for V2 Data Engine volumes works on supported kernels but may cause a kernel panic with Linux kernel 6.17.
 * *Upgrade IP Buffer*: During cluster upgrades, {harvester-product-name} requires additional storage network IPs (for example, the upgrade repository deployment consumes an IP for its RWX volume, and old/new pods co-exist).
