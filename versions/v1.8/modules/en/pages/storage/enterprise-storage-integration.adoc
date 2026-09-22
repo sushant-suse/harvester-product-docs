@@ -1,5 +1,5 @@
 = Enterprise Storage Integration (CSI)
-:revdate: 2026-09-04
+:revdate: 2026-09-22
 :page-revdate: {revdate}
 
 {harvester-product-name} ships with {longhorn-product-name} as the built-in storage system. However, {harvester-product-name} also supports provisioning root volumes and data volumes using external Container Storage Interface (CSI) drivers. This allows integration with existing enterprise SAN or NAS storage solutions.
@@ -8,7 +8,7 @@
 
 When presenting external storage block devices to {harvester-product-name} nodes, ensure that the built-in {longhorn-product-name} engine does not attempt to claim them:
 
-* *File System-Type Disks*: {longhorn-product-name} creates a default file system-type disk at `/var/lib/longhorn`. Do not mount external storage to this path.
+* *File System-Type Disks*: {harvester-product-name} overrides the upstream {longhorn-product-name} configuration and creates a default file system-type disk at `/var/lib/harvester/defaultdisk`. Do not mount external storage to this path.
 * *Block-Type Disks*: The V2 Data Engine requires raw block devices. If your external storage presents raw block devices (for example, NVMe or VirtIO) to the host, do not add these paths to the {longhorn-product-name} UI or `spec.disks` configuration.
 * *Auto-Provisioning*: Be cautious when using the `node.longhorn.io/create-default-disk: 'config'` label alongside the `node.longhorn.io/default-disks-config` annotation to ensure auto-provisioning does not target external storage paths.
 
@@ -76,5 +76,5 @@ For a detailed breakdown of configuration options, test cases, and expected outp
 
 Once configured and validated, external storage can be selected during standard VM operations:
 
-* *Virtual Machine Creation*: Select your enterprise `StorageClass` on the *Volumes* tab during xref:virtual-machines/create-vm.adoc[Virtual Machine Creation]. Ensure you select the appropriate *Volume Mode* (for example, *Filesystem* for NFS or *Block* for SAN storage).
+* *Virtual Machine Creation*: Select your enterprise `StorageClass` on the *Volumes* tab during xref:virtual-machines/create-vm.adoc[Virtual Machine Creation]. Ensure you select the *Volume Mode* supported by your CSI driver and StorageClass configuration (for example, *Filesystem* for NFS, whereas SAN-backed CSI drivers may support either *Filesystem* or *Block* depending on how they present the volume to Kubernetes).
 * *Limitations*: Review xref:storage/csidriver.adoc#_limitations[Third-Party Storage Limitations] regarding VM backup restrictions (limited to {longhorn-product-name}) and detached PVC prerequisites when exporting images.
