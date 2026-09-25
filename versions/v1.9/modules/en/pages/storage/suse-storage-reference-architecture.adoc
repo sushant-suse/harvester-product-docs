@@ -1,5 +1,5 @@
 = {longhorn-product-name} Reference Architecture
-:revdate: 2026-09-22
+:revdate: 2026-09-25
 :page-revdate: {revdate}
 
 {harvester-product-name} supports distributed block storage and tiering using {longhorn-product-name} as its built-in storage system. Each {longhorn-product-name} volume is managed by a dedicated storage controller and is synchronously replicated across nodes in the cluster.
@@ -28,17 +28,17 @@ In its default configuration, {longhorn-product-name} utilizes the V1 Data Engin
 
 [IMPORTANT]
 ====
-The Longhorn V2 Data Engine is currently an *Experimental* feature and should not be utilized in a production environment.
+The Longhorn V2 Data Engine is a *Technical Preview* feature. Explore the feature extensively before using in production environments.
 ====
 
 The V2 Data Engine utilizes the Storage Performance Development Kit (SPDK) to reduce I/O latency while boosting IOPS and throughput (see xref:storage/longhorn-v2-data-engine.adoc[{longhorn-product-name} V2 Data Engine]). It requires raw block disks, and local NVMe disks are strongly recommended for optimal performance.
 
-Deploying the V2 engine requires strict adherence to the following dedicated resources and configurations per node:
+Deploying the V2 engine requires adherence to the following resource configurations per node:
 
-* *CPU Allocation*: The `spdk_tgt` process relies on intensive busy-polling. By default, the `data-engine-cpu-mask` is set to `0x3` (which allocates 2 dedicated CPU cores) to separate I/O polling from management RPCs, preventing latency spikes and operational instability.
-* *Memory (HugePages)*: Nodes require 2 GiB of RAM allocated specifically as 1024 × 2 MiB-sized huge pages.
+* *CPU Allocation*: The `spdk_tgt` process relies on intensive busy-polling. By default, the `data-engine-cpu-mask` setting is set to `0x3`, which binds `spdk_tgt` to CPU IDs 0 and 1 to separate I/O polling from management RPCs. Note that `data-engine-cpu-mask` binds to fixed CPU IDs rather than reserving them exclusively. On nodes where the CPU Manager is enabled for CPU-pinned virtual machines, overlapping CPU assignments can prevent `spdk_tgt` from starting. On CPU-manager-enabled deployments, configure `data-engine-number-of-cpu-cores` (recommended: at least 2 cores) so Longhorn can dynamically request exclusive CPU core allocations from the CPU Manager.
+* *Memory (HugePages)*: By default, nodes allocate 2 GiB of RAM as 1024 × 2 MiB-sized huge pages. Huge pages are strictly required when using the `nvme` or `virtio` bdev drivers, but can be disabled when using the default `aio` bdev driver.
 * *Kernel & Modules*: Requires Linux kernel 5.19 or later for NVMe/TCP support (version 6.7 or later is recommended for improved stability), alongside the `vfio_pci`, `uio_pci_generic`, and `nvme-tcp` kernel modules.
-* *Disk & IOMMU Isolation*: For SPDK to natively claim an NVMe disk, the device must be fully isolatable; VFIO must claim the entire IOMMU group.
+* *Disk & Driver Requirements*: In Harvester v1.9, newly added V2 disks use the `aio` driver by default, which operates on Linux block device paths and avoids VFIO device binding. When using the `nvme` driver to natively claim an NVMe disk via SPDK, the device must be fully isolatable with VFIO claiming the entire IOMMU group.
 
 == Storage Networking
 
